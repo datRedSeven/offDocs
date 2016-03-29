@@ -1,30 +1,54 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Offdocs</title>
-  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
-  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
-  <%= csrf_meta_tags %>
+	<title>Offdocs</title>
+	<%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+	<%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+	<%= csrf_meta_tags %>
 </head>
 <body>
 
-<% flash.each do |name, msg| %>
+
+	<div class="menu-navigation">
+		<nav class="navbar navbar-default" role="navigation">
+			<div class="navbar-header">
+				<button type="button" data-target="#navbarCollapse" data-toggle="collapse" class="navbar-toggle">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<div class="navbar-brand"> <%= link_to 'OffDocs', root_path %> </div>
+			</div>
+
+			<div id="navbarCollapse" class="collapse navbar-collapse">
+				<form role="search" class="navbar-form navbar-left">
+					<div class="form-group">
+						<input type="text" placeholder="Search" class="form-control">
+					</div>
+				</form>
+				<ul class="nav navbar-nav navbar-right">
+
+					<% if user_signed_in? %>
+					<li> <%= link_to 'Account', edit_user_registration_path %> </li>
+					<li> <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %> </li>
+					<% else %>
+					<li> <%= link_to 'Sign up', new_user_registration_path %> </li>
+					<li> <%= link_to 'Sign in', new_user_session_path %> </li>
+					<% end %>
+
+				</ul>
+			</div>
+		</nav>
+	</div>
+
+	<% flash.each do |name, msg| %>
 	<%= content_tag(:div, msg, class: "alert alert-#{name}") %>
-<% end %>
+	<% end %>
 
-<% if user_signed_in? %>
-	<ul>
-		<li> <%= link_to 'Account', edit_user_registration_path %> </li>
-		<li> <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %> </li>
-	</ul>
-<% else %>
-	<ul>
-		<li> <%= link_to 'Sign up', new_user_registration_path %> </li>
-		<li> <%= link_to 'Sign in', new_user_session_path %> </li>
-	</ul>
-<% end %>
-
-<%= yield %>
+	<div class="col-md-9 center-block" id="container">
+		<%= yield %>
+	</div>
 
 </body>
 </html>
