@@ -23,12 +23,12 @@
 
 			<div id="navbarCollapse" class="collapse navbar-collapse">
 				<form role="search" class="navbar-form navbar-left">
-					<div class="form-group">
-						<input type="text" placeholder="Search" class="form-control">
-					</div>
+					<%= form_tag docs_path, :method => "get", id: "search-form", class: "form-control" do %>
+					<%= text_field_tag :search, params[:search], placeholder: "Search", class: "form-control" %>
+					<%= submit_tag "Search", class: "btn btn-primary" %>
+					<% end %>
 				</form>
 				<ul class="nav navbar-nav navbar-right">
-
 					<% if user_signed_in? %>
 					<li> <%= link_to 'Account', edit_user_registration_path %> </li>
 					<li> <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %> </li>

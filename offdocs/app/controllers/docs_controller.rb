@@ -1,3 +1,4 @@
+require 'open-uri'
 class DocsController < ApplicationController
   before_action :set_doc, only: [:show, :edit, :update, :destroy]
   before_filter :authenticate_user!, except: [:index, :show]
@@ -5,7 +6,12 @@ class DocsController < ApplicationController
   # GET /docs
   # GET /docs.json
   def index
-    @docs = Doc.all
+    @docs = Doc.all.order("created_at DESC")
+    if params[:search]
+      @docs = Doc.search(params[:search]).order("created_at DESC")
+    else
+      @docs = Doc.all.order("created_at DESC")
+    end
   end
 
   # GET /docs/1
@@ -25,7 +31,24 @@ class DocsController < ApplicationController
   # POST /docs
   # POST /docs.json
   def create
-    @doc = current_user.docs.build(doc_params)
+    tmp_params = doc_params
+    news_tmp_file = open('https://news.google.com')
+    parsed = Nokogiri::HTML(news_tmp_file)
+    article_css_class         =".esc-layout-article-cell"
+    article_header_css_class  ="span.titletext"
+    article_summary_css_class =".esc-lead-snippet-wrapper"
+    articles = parsed.css(article_css_class)
+    html = ""
+    prime_title = nil;
+    articles.each do |article|
+      title_nodes = article.css(article_header_css_class)
+      prime_title = title_nodes.first
+      html += "%s" % prime_title.text
+    end
+    tmp_params[:document] = html
+
+
+    @doc = current_user.docs.build(tmp_params)
 
     respond_to do |format|
       if @doc.save
