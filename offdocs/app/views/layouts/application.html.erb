@@ -41,10 +41,15 @@
 			</div>
 		</nav>
 	</div>
+	
 
+	
 	<% flash.each do |name, msg| %>
-	<%= content_tag(:div, msg, class: "alert alert-#{name}") %>
+	<div class="alert alert-info">
+		<%= content_tag(:div, msg) %>
+	</div>
 	<% end %>
+	
 
 	<div class="col-md-9 center-block" id="container">
 		<%= yield %>
