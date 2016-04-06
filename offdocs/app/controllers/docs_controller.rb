@@ -11,10 +11,15 @@ class DocsController < ApplicationController
   def index
     @docs = Doc.all.order("created_at DESC")
     if params[:search]
-      @docs = Doc.search(params[:search]).order("created_at DESC")
+    #  @docs = Doc.search(params[:search]).order("created_at DESC")
+      @search = Doc.search do
+       fulltext params[:search]
+     end
+      @docs = @search.results
     else
       @docs = Doc.all.order("created_at DESC")
     end
+
   end
 
   # GET /docs/1
