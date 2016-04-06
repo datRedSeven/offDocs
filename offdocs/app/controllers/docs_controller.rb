@@ -4,7 +4,7 @@ require 'RMagick'
 
 class DocsController < ApplicationController
   before_action :set_doc, only: [:show, :edit, :update, :destroy]
-  before_filter :authenticate_user!, except: [:index, :show]
+  before_filter :authenticate_user!, except: [:index]
 
   # GET /docs
   # GET /docs.json
@@ -36,9 +36,13 @@ class DocsController < ApplicationController
   def create
     tmp_params = doc_params
     html = ""
-    #FROM BLOB
-
-    pdf = Magick::ImageList.new("/Users/Slava/Downloads/11.pdf") {self.density = 300}
+    
+    uri = Addressable::URI.parse(tmp_params[:source_link]).normalize
+    #urlDoc = open(uri)
+    #urlDoc = Magick::Image.read(uri)
+    pdf = Magick::ImageList.new(uri) {self.density = 300}
+    #pdf = Magick::ImageList.new("/Users/Slava/Downloads/11.pdf") {self.density = 300}
+    #pdf.from_blob(urlDoc.read) 
     pdf.each do |page_img|
       
       #page_img.write("/Users/Slava/Downloads/#{i}_pdf_page.jpg")
