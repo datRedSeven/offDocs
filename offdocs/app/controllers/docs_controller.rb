@@ -14,7 +14,7 @@ class DocsController < ApplicationController
     #  @docs = Doc.search(params[:search]).order("created_at DESC")
       @search = Doc.search do
        fulltext params[:search]
-     end
+      end
       @docs = @search.results
     else
       @docs = Doc.all.order("created_at DESC")
