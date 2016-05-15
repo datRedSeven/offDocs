@@ -1,6 +1,7 @@
 require 'open-uri'
 require 'pdf-reader'
 require 'RMagick'
+require 'mechanize'
 
 class DocsController < ApplicationController
   before_action :set_doc, only: [:show, :edit, :update, :destroy]
@@ -123,6 +124,61 @@ class DocsController < ApplicationController
       format.json { head :no_content }
     end
   end
+
+  def import_docs
+    #@doc = current_user.docs.build
+    #@doc.save
+    agent = Mechanize.new
+    i = 1
+    while true do
+      url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+    #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
+      if agent.get(url).links_with(:class => 'media-item-link').count == 0
+        break
+      end
+    #page = agent.get(url)
+      agent.get(url) do |page|
+
+        page.links_with(:class => 'media-item-link').each do |link|
+        #puts link.text
+
+          tmp_page = agent.click(link)
+        #pp pagex
+        #pagex.links_with(:href => %r{pdf}).each do |link|
+        #  puts link.href
+        #end
+          tmp_link = tmp_page.links_with(:href => %r{pdf}).first
+          @doc = current_user.docs.build
+          @doc[:title] = tmp_link.text
+          pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300}
+          html = ''
+          pdf.each do |page_img|
+            img = RTesseract.new(page_img, :lang => "rus")
+            html += img.to_s
+          end
+          #pdf = Magick::ImageList.new(tmp_link.href) {self.density = 72}
+          #pdf.write("downloads/test.pdf")
+
+          @doc[:document] = html
+
+          
+          @doc.save
+          open('downloads/' + @doc.id.to_s + '.pdf', 'wb') do |file|
+            file << open(tmp_link.href).read
+          end
+          break #BREAK HERE TEST
+
+        end
+      end
+      break #HERE TOO
+      i += 1
+    end
+    #puts page.links_with(:class => 'media-item-link').count
+    #page.links_with(:id => 'more_docs').first.click
+    #puts page.links_with(:class => 'media-item-link').count
+    redirect_to docs_url
+  end
+
 
   private
     # Use callbacks to share common setup or constraints between actions.

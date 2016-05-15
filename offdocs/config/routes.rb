@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   devise_for :users
-  resources :docs
+  resources :docs 
+  get '/import_docs' => 'docs#import_docs'
+  
+
 
   root to: "docs#index"
   # The priority is based upon order of creation: first created -> highest priority.
