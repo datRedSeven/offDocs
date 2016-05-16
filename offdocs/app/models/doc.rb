@@ -3,6 +3,6 @@ class Doc < ActiveRecord::Base
 	has_attached_file :attachment, :path => ':rails_root/downloads/:id.pdf'
 
 	searchable do
-		text :title, :source, :document
+		text :document, :title
 	end
 end
