@@ -4,7 +4,7 @@ require 'RMagick'
 require 'mechanize'
 
 class DocsController < ApplicationController
-  before_action :set_doc, only: [:show, :edit, :update, :destroy]
+  before_action :set_doc, only: [:show, :edit, :update, :destroy, :document_download]
   before_filter :authenticate_user!, except: [:index]
 
   # GET /docs
@@ -129,7 +129,7 @@ class DocsController < ApplicationController
     #@doc = current_user.docs.build
     #@doc.save
     agent = Mechanize.new
-    i = 1
+    i = 2
     while true do
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
@@ -161,12 +161,22 @@ class DocsController < ApplicationController
 
           @doc[:document] = html
 
+
+
+
           
           @doc.save
-          open('downloads/' + @doc.id.to_s + '.pdf', 'wb') do |file|
+          path = 'downloads/' + @doc.id.to_s + '.pdf'
+          open(path, 'wb') do |file|
             file << open(tmp_link.href).read
+            @doc[:attachment_file_name] = file
+            @doc[:attachment_content_type] = 'application/pdf'
           end
-          break #BREAK HERE TEST
+
+          #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
+          @doc.save
+
+          #break #BREAK HERE TEST
 
         end
       end
@@ -179,6 +189,10 @@ class DocsController < ApplicationController
     redirect_to docs_url
   end
 
+  def document_download
+    send_file @doc.attachment.path, :type => @doc.attachment_content_type, :x_sendfile=>true
+  end
+
 
   private
     # Use callbacks to share common setup or constraints between actions.
@@ -188,6 +202,6 @@ class DocsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def doc_params
-      params.require(:doc).permit(:title, :source, :source_link, :document, :url)
+      params.require(:doc).permit(:title, :source, :source_link, :document, :url, :attachment_file_name)
     end
 end

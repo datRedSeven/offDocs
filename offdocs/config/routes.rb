@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   devise_for :users
   resources :docs 
   get '/import_docs' => 'docs#import_docs'
+  get '/download' => 'docs#document_download', :as => :download
   
 
 
