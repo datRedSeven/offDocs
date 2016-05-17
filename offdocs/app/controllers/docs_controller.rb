@@ -13,19 +13,22 @@ class DocsController < ApplicationController
     @docs = Doc.all.order("created_at DESC")
     if params[:search]
     #  @docs = Doc.search(params[:search]).order("created_at DESC")
-      @search = Doc.search do
-       fulltext params[:search]
-      end
-      @docs = @search.results
-    else
-      @docs = Doc.all.order("created_at DESC")
-    end
+    @search = Doc.search do
+     fulltext params[:search]
+   end
+   @docs = @search.results
+ else
+  @docs = Doc.all.order("created_at DESC")
+end
 
-  end
+end
 
   # GET /docs/1
   # GET /docs/1.json
   def show
+    if !@doc.updates.empty?
+      flash.now[:notice] = "Something has changed"
+    end
   end
 
   # GET /docs/new
@@ -50,7 +53,7 @@ class DocsController < ApplicationController
     #pdf = Magick::ImageList.new("/Users/Slava/Downloads/11.pdf") {self.density = 300}
     #pdf.from_blob(urlDoc.read) 
     pdf.each do |page_img|
-      
+
       #page_img.write("/Users/Slava/Downloads/#{i}_pdf_page.jpg")
       #img = RTesseract.new(page_img)
       #img = RTesseract.new("/Users/Slava/Downloads/scan1.bmp", :lang => "rus")
@@ -133,56 +136,91 @@ class DocsController < ApplicationController
     while true do
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
-      if agent.get(url).links_with(:class => 'media-item-link').count == 0
-        break
-      end
+    if agent.get(url).links_with(:class => 'media-item-link').count == 0
+      break
+    end
     #page = agent.get(url)
-      agent.get(url) do |page|
+    agent.get(url) do |page|
 
-        page.links_with(:class => 'media-item-link').each do |link|
+      page.links_with(:class => 'media-item-link').each do |link|
         #puts link.text
 
-          tmp_page = agent.click(link)
+
+        tmp_page = agent.click(link)
         #pp pagex
         #pagex.links_with(:href => %r{pdf}).each do |link|
         #  puts link.href
         #end
-          tmp_link = tmp_page.links_with(:href => %r{pdf}).first
+        tmp_link = tmp_page.links_with(:href => %r{pdf}).first
+        if Doc.where("title = ?", tmp_link.text).empty?
+          if tmp_link.text.include? "О внесении изменения" or tmp_link.text.include? "О внесении изменений"
+            str = tmp_link.text
+            if str.include? "О внесении изменения"
+              str = str.split("О внесении изменения")
+            else
+              str = str.split("О внесении изменений")
+            end
+            if str[1].include? "от"
+              str = str[1]
+              str = str.split("№ ")
+              str = str[1]
+              str = str.split(" ")
+              str = str[0].gsub(/[^\d,\.]/, '')
+              @original = Doc.where('title LIKE ?', '%№ ' + str + '%').all
+              @original = @original.where.not('title LIKE ?', '%изменен%').first
+
+            end
+          end
           @doc = current_user.docs.build
           @doc[:title] = tmp_link.text
-          pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300}
+
+          #-------------------------
+          pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300} 
           html = ''
           pdf.each do |page_img|
             img = RTesseract.new(page_img, :lang => "rus")
             html += img.to_s
           end
-          #pdf = Magick::ImageList.new(tmp_link.href) {self.density = 72}
-          #pdf.write("downloads/test.pdf")
 
           @doc[:document] = html
+          @doc.save
+          #-----------------------
 
 
 
 
           
-          @doc.save
+          
+          
+          if !@original.nil?
+            #@doc[:original_id] = @original.id
+            #puts @original.id
+            @original.updates << @doc
+          end
+          @original = nil
+          #------------------
           path = 'downloads/' + @doc.id.to_s + '.pdf'
           open(path, 'wb') do |file|
             file << open(tmp_link.href).read
             @doc[:attachment_file_name] = file
             @doc[:attachment_content_type] = 'application/pdf'
           end
+          #----------------------
 
-          #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
+          @doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
           @doc.save
 
           #break #BREAK HERE TEST
-
         end
       end
-      break #HERE TOO
-      i += 1
     end
+    if i == 1
+      break
+    end
+      #break #HERE TOO
+      i -= 1
+    end
+    
     #puts page.links_with(:class => 'media-item-link').count
     #page.links_with(:id => 'more_docs').first.click
     #puts page.links_with(:class => 'media-item-link').count
@@ -202,6 +240,6 @@ class DocsController < ApplicationController
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def doc_params
-      params.require(:doc).permit(:title, :source, :source_link, :document, :url, :attachment_file_name)
+      params.require(:doc).permit(:title, :source, :source_link, :document, :url, :attachment_file_name, :original_id)
     end
-end
+  end

@@ -1,5 +1,7 @@
 <p id="notice"><%= notice %></p>
 
+
+
 <p>
   <strong>Title:</strong>
   <%= @doc.title %>
@@ -10,25 +12,21 @@
   <%= @doc.source %>
 </p>
 
-<p>
-  <strong>Source link:</strong>
-  <%= @doc.source_link %>
-</p>
-
-<p>
-  <strong>Document:</strong>
-  <%= @doc.document %>
-</p>
 
 <p>
   <strong>File:</strong>
   <%= link_to 'Download', download_path(:id => @doc.id) %>
 </p>
 
-<p>
-  <strong>Url:</strong>
-  <%= @doc.url %>
+<p> 
+  <strong> Updates </strong>
+  <%= @doc.updates.each do |u| %>
+    <p>
+      <%= link_to u.title, u %>
+    </p>
+  <% end %>
 </p>
+
 
 <%= link_to 'Edit', edit_doc_path(@doc) %> |
 <%= link_to 'Back', docs_path %>
