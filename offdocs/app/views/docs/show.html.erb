@@ -20,7 +20,7 @@
 
 <p> 
   <strong> Updates </strong>
-  <%= @doc.updates.each do |u| %>
+  <% @doc.updates.each do |u| %>
     <p>
       <%= link_to u.title, u %>
     </p>

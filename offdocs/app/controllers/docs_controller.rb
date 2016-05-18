@@ -132,94 +132,116 @@ end
     #@doc = current_user.docs.build
     #@doc.save
     agent = Mechanize.new
-    i = 2
+    i = 1
+    #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+    
     while true do
-      url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+      #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
-    if agent.get(url).links_with(:class => 'media-item-link').count == 0
-      break
+      puts i
+      url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+      if agent.get(url).links_with(:class => 'media-item-link').count == 0
+        i -= 1
+        break
+      end
+      i += 1
+
     end
+    i = 2
     #page = agent.get(url)
-    agent.get(url) do |page|
-
-      page.links_with(:class => 'media-item-link').each do |link|
-        #puts link.text
-
-
-        tmp_page = agent.click(link)
-        #pp pagex
-        #pagex.links_with(:href => %r{pdf}).each do |link|
-        #  puts link.href
-        #end
-        tmp_link = tmp_page.links_with(:href => %r{pdf}).first
-        if Doc.where("title = ?", tmp_link.text).empty?
-          if tmp_link.text.include? "О внесении изменения" or tmp_link.text.include? "О внесении изменений"
-            str = tmp_link.text
-            if str.include? "О внесении изменения"
-              str = str.split("О внесении изменения")
-            else
-              str = str.split("О внесении изменений")
+    puts i
+    while i > 0 do
+      url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+      agent.get(url) do |page|
+        page.links_with(:class => 'media-item-link').each do |link|
+          #puts link.text
+          tmp_page = agent.click(link)
+          #pp pagex
+          #pagex.links_with(:href => %r{pdf}).each do |link|
+          #  puts link.href
+          #end
+          tmp_link = tmp_page.links_with(:href => %r{pdf}).first
+          #puts "___________________"
+          #puts link.text
+          #if tmp_link.nil?
+          #  tmp_link.text = link.text
+          #end
+          #if Doc.where("title = ?", tmp_link.text).empty?
+          if Doc.where("title = ?", link.text).empty?
+            #if tmp_link.text.include? "О внесении изменения" or tmp_link.text.include? "О внесении изменений"
+            if link.text.include? "О внесении изменения" or link.text.include? "О внесении изменений"
+              #str = tmp_link.text
+              str = link.text
+              if str.include? "О внесении изменения"
+                str = str.split("О внесении изменения")
+              else
+                str = str.split("О внесении изменений")
+              end
+              if str[1].include? " от "
+                str = str[1]
+                str = str.split("№ ")
+                str = str[1]
+                str = str.split(" ")
+                str = str[0].gsub(/[^\d,\.]/, '')
+                #@search = Doc.search do
+                  
+                #  fulltext str
+                  
+                #end
+                @original = Doc.where('title LIKE ?', '%№ ' + str + '%').all
+                @original = @original.where.not('title LIKE ?', '%изменен%').first
+              end
             end
-            if str[1].include? "от"
-              str = str[1]
-              str = str.split("№ ")
-              str = str[1]
-              str = str.split(" ")
-              str = str[0].gsub(/[^\d,\.]/, '')
-              @original = Doc.where('title LIKE ?', '%№ ' + str + '%').all
-              @original = @original.where.not('title LIKE ?', '%изменен%').first
+            @doc = current_user.docs.build
+            #@doc[:title] = tmp_link.text
+            @doc[:title] = link.text
+            #-------------------------
+            #pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300} 
+            #html = ''
+            #pdf.each do |page_img|
+            #  img = RTesseract.new(page_img, :lang => "rus")
+            #  html += img.to_s
+            #end
 
+            #@doc[:document] = html
+            @doc.save
+            #-----------------------
+
+
+
+
+          
+          
+            #---------------------------
+            if !@original.nil?
+              @original.updates << @doc
             end
-          end
-          @doc = current_user.docs.build
-          @doc[:title] = tmp_link.text
-
-          #-------------------------
-          pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300} 
-          html = ''
-          pdf.each do |page_img|
-            img = RTesseract.new(page_img, :lang => "rus")
-            html += img.to_s
-          end
-
-          @doc[:document] = html
-          @doc.save
-          #-----------------------
-
-
-
-
+            @original = nil
+            #------------------
+            #path = 'downloads/' + @doc.id.to_s + '.pdf'
+            #open(path, 'wb') do |file|
+            #  file << open(tmp_link.href).read
+            #  @doc[:attachment_file_name] = file
+            #  @doc[:attachment_content_type] = 'application/pdf'
+            #end
           
-          
-          
-          if !@original.nil?
-            #@doc[:original_id] = @original.id
-            #puts @original.id
-            @original.updates << @doc
-          end
-          @original = nil
-          #------------------
-          path = 'downloads/' + @doc.id.to_s + '.pdf'
-          open(path, 'wb') do |file|
-            file << open(tmp_link.href).read
-            @doc[:attachment_file_name] = file
-            @doc[:attachment_content_type] = 'application/pdf'
-          end
-          #----------------------
 
-          @doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
-          @doc.save
+            #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
+            #@doc.save
+            #----------------------
 
-          #break #BREAK HERE TEST
+            #break #BREAK HERE TEST
+          end
         end
       end
-    end
-    if i == 1
-      break
-    end
-      #break #HERE TOO
       i -= 1
     end
+    #if i == 1
+    #  break
+    #end
+      #break #HERE TOO
+      #i -= 1
+    #end
     
     #puts page.links_with(:class => 'media-item-link').count
     #page.links_with(:id => 'more_docs').first.click
