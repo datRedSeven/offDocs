@@ -13,11 +13,21 @@
 </p>
 
 
-<p>
-  <strong>File:</strong>
-  <%= link_to 'Download', download_path(:id => @doc.id) %>
-</p>
 
+
+<p>
+  <strong>Documents:</strong>
+  <% @doc.attachments.each do |attachment| %>
+      <%= attachment.title %>
+      <br>
+      <% attachment.scans.each do |scan| %>
+        <%= image_tag(scan.image.url) %>
+      <% end %>
+    <p>
+      <%= link_to 'Download', download_path(:id => attachment.id) %>
+    </p>
+  <% end %>
+</p>
 <p> 
   <strong> Updates </strong>
   <% @doc.updates.each do |u| %>
@@ -26,6 +36,9 @@
     </p>
   <% end %>
 </p>
+
+
+
 
 
 <%= link_to 'Edit', edit_doc_path(@doc) %> |

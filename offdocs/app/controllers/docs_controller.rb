@@ -2,9 +2,11 @@ require 'open-uri'
 require 'pdf-reader'
 require 'RMagick'
 require 'mechanize'
+require 'docsplit'
 
 class DocsController < ApplicationController
-  before_action :set_doc, only: [:show, :edit, :update, :destroy, :document_download]
+  before_action :set_doc, only: [:show, :edit, :update, :destroy]
+  before_action :set_attachment, only: [:document_download]
   before_filter :authenticate_user!, except: [:index]
 
   # GET /docs
@@ -29,7 +31,11 @@ end
     if !@doc.updates.empty?
       flash.now[:notice] = "Something has changed"
     end
+   # @pdf = Magick::ImageList.new(@doc.attachment.path) {self.density = 100}
+    #@imgs = Docsplit.extract_images(@doc.attachment.path, :size => '1000x', :format => [:jpg], :path => '/downloads/tmp')
+
   end
+
 
   # GET /docs/new
   def new
@@ -138,7 +144,7 @@ end
     while true do
       #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
-      puts i
+      #puts i
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
       if agent.get(url).links_with(:class => 'media-item-link').count == 0
         i -= 1
@@ -149,7 +155,7 @@ end
     end
     i = 2
     #page = agent.get(url)
-    puts i
+    #puts i
     while i > 0 do
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
       agent.get(url) do |page|
@@ -160,7 +166,7 @@ end
           #pagex.links_with(:href => %r{pdf}).each do |link|
           #  puts link.href
           #end
-          tmp_link = tmp_page.links_with(:href => %r{pdf}).first
+          tmp_links = tmp_page.links_with(:href => %r{pdf})
           #puts "___________________"
           #puts link.text
           #if tmp_link.nil?
@@ -179,31 +185,31 @@ end
               end
               if str[1].include? " от "
                 str = str[1]
-                str = str.split("№ ")
+                str = str.split(". № ")
+                date = str[0]
+                date = date.split(" от ")
+                date = date[1]
                 str = str[1]
                 str = str.split(" ")
                 str = str[0].gsub(/[^\d,\.]/, '')
-                #@search = Doc.search do
-                  
-                #  fulltext str
-                  
-                #end
-                @original = Doc.where('title LIKE ?', '%№ ' + str + '%').all
+
+                @original = Doc.where('title LIKE ? and title LIKE ?', '%№ ' + str + '%', '%' + date + '%').all
                 @original = @original.where.not('title LIKE ?', '%изменен%').first
               end
             end
             @doc = current_user.docs.build
             #@doc[:title] = tmp_link.text
             @doc[:title] = link.text
+            html = ''
             #-------------------------
-            #pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300} 
-            #html = ''
-            #pdf.each do |page_img|
-            #  img = RTesseract.new(page_img, :lang => "rus")
-            #  html += img.to_s
-            #end
-
-            #@doc[:document] = html
+            tmp_links.each do |tmp_link|
+              pdf = Magick::ImageList.new(tmp_link.href) {self.density = 300} 
+              pdf.each do |page_img|
+                img = RTesseract.new(page_img, :lang => "rus")
+                html += img.to_s
+              end
+            end
+            @doc[:document] = html
             @doc.save
             #-----------------------
 
@@ -218,23 +224,47 @@ end
             end
             @original = nil
             #------------------
-            #path = 'downloads/' + @doc.id.to_s + '.pdf'
-            #open(path, 'wb') do |file|
-            #  file << open(tmp_link.href).read
-            #  @doc[:attachment_file_name] = file
-            #  @doc[:attachment_content_type] = 'application/pdf'
-            #end
+            tmp_links.each do |tmp_link|
+              @attachment = @doc.attachments.create
+              path = 'downloads/' + @attachment.id.to_s + '.pdf'
+              open(path, 'wb') do |file|
+                file << open(tmp_link.href).read
+                
+                @attachment[:title] = tmp_link.text
+                #@attachment[:file_file_name] = file
+                @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
+                @attachment[:file_content_type] = 'application/pdf'
+                @attachment.save
+              #@doc[:attachment_file_name] = file
+              #doc[:attachment_content_type] = 'application/pdf'
+              end
+              
+              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+              @list.each do |l|
+                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                #puts x[1]
+                @scan = @attachment.scans.create
+                @scan[:image_file_name] = image_name[1]
+                @scan[:image_content_type] = 'image/jpg'
+                @scan.save
+              end
+
+            end
           
 
             #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
             #@doc.save
             #----------------------
 
-            #break #BREAK HERE TEST
+        #    break #BREAK HERE TEST
           end
+          
         end
+        #break #$SFFQFQEF
       end
       i -= 1
+      #break #DAKLNFLKA
     end
     #if i == 1
     #  break
@@ -250,7 +280,7 @@ end
   end
 
   def document_download
-    send_file @doc.attachment.path, :type => @doc.attachment_content_type, :x_sendfile=>true
+    send_file @attachment.file.path, :type => @attachment.file_content_type, :x_sendfile=>true
   end
 
 
@@ -258,6 +288,10 @@ end
     # Use callbacks to share common setup or constraints between actions.
     def set_doc
       @doc = Doc.find(params[:id])
+    end
+
+    def set_attachment
+      @attachment = Attachment.find(params[:id])
     end
 
     # Never trust parameters from the scary internet, only allow the white list through.
