@@ -4,6 +4,7 @@ require 'RMagick'
 require 'mechanize'
 require 'docsplit'
 require 'json'
+require 'zip'
 
 class DocsController < ApplicationController
   before_action :set_doc, only: [:show, :edit, :update, :destroy]
@@ -140,9 +141,202 @@ end
     #@doc.save
     agent = Mechanize.new
     i = 1
+
+
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
+
+    #-------
+    temp_folder_path = 'downloads/temp/'
     
-    while true do
+    while true do 
+      main_doc_id = nil
+      url = "http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?&from_4=#{i}"
+      if agent.get(url).links_with(:href => /id_4=/).count == 0
+        break
+      end
+      agent.get(url) do |page|
+        divs = page.search('div.proj_ttl')
+        divs.each do |div| 
+          #puts div
+          #puts div.attributes['class']
+          if Doc.where("title = ?", div.at('a').text).empty?
+            
+            @doc = current_user.docs.create
+
+            link = div.at('a').attributes['href'].to_s
+            title = div.at('a').text.to_s
+            @doc[:title] = title
+            if div.attributes['class'].to_s.include? "proj_zip"
+              zip_path = 'downloads/' + @doc.id.to_s + '.zip'
+              response = agent.get_file("http://www.obrnadzor.gov.ru/ru/docs/documents/" + link)
+              #"http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?id_4=5182"
+              File.open(zip_path, 'wb') {|f| f << response}
+              FileUtils.mkdir_p(temp_folder_path)
+              Zip::File.open(zip_path) do |zip_file|
+                zip_file.each do |f|
+                  fpath = File.join(temp_folder_path, f.name)
+                  zip_file.extract(f, fpath) unless File.exist?(fpath)
+                end
+              end
+
+              #File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+              File.delete(Rails.root.join('downloads').to_s + "/" + @doc.id.to_s + ".zip")
+
+              list = Dir[Rails.root.join('downloads', 'temp').to_s + "/**/*.pdf"]
+              list.each do |l|
+                att_name = l.split('/').last
+                FileUtils.mv(l, Rails.root.join('downloads').to_s + '/')
+
+                @attachment = @doc.attachments.create
+                File.rename(Rails.root.join('downloads').to_s + '/' + att_name, Rails.root.join('downloads').to_s + '/' + @attachment.id.to_s + '.pdf')
+                @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
+                @attachment[:file_content_type] = 'application/pdf'
+                @attachment.save
+
+                extracted_text = ''
+                path = 'downloads/' + @attachment.id.to_s + '.pdf'
+                pdf = Magick::ImageList.new(path) {self.density = 300} 
+                pdf.each do |page_img|
+                  img = RTesseract.new(page_img, :lang => "rus")
+                  extracted_text += img.to_s
+                end
+                @doc[:document] = extracted_text
+
+                Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                @list.each do |l|
+                  image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                
+                  @scan = @attachment.scans.create
+                  @scan[:image_file_name] = image_name[1]
+                  @scan[:image_content_type] = 'image/jpg'
+                  @scan.save
+                end
+
+              end
+              FileUtils.rm_rf(Rails.root.join('downloads', 'temp').to_s + '/')
+              @doc.save
+            end
+
+            if div.attributes['class'].to_s.include? "proj_doc" or div.attributes['class'].to_s.include? "proj_2" 
+              @attachment = @doc.attachments.create
+              path = 'downloads/' + @attachment.id.to_s + '.doc'
+              response = agent.get_file("http://www.obrnadzor.gov.ru/ru/docs/documents/" + link)
+              #"http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?id_4=5182"
+              File.open(path, 'wb') {|f| f << response}
+              @attachment[:file_file_name] = @attachment.id.to_s + '.doc'
+              @attachment[:file_content_type] = 'application/doc'
+              @attachment.save
+
+              Docsplit.extract_text(path, ocr: false, output: Rails.root.join('downloads').to_s)
+              extracted_text = File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+              @doc[:document] = extracted_text.gsub(/\p{Cc}/, "")
+              
+              File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                  
+
+
+              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+              @list.each do |l|
+                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                @scan = @attachment.scans.create
+                @scan[:image_file_name] = image_name[1]
+                @scan[:image_content_type] = 'image/jpg'
+                @scan.save
+              end
+              @doc.save
+            end
+
+            if div.attributes['class'].to_s.include? "proj_xls" or div.attributes['class'].to_s.include? "proj_3" 
+              @attachment = @doc.attachments.create
+              path = 'downloads/' + @attachment.id.to_s + '.xls'
+              response = agent.get_file("http://www.obrnadzor.gov.ru/ru/docs/documents/" + link)
+              #"http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?id_4=5182"
+              File.open(path, 'wb') {|f| f << response}
+              @attachment[:file_file_name] = @attachment.id.to_s + '.xls'
+              @attachment[:file_content_type] = 'application/xls'
+              @attachment.save
+
+              Docsplit.extract_text(path, ocr: false, output: Rails.root.join('downloads').to_s)
+              extracted_text = File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+              @doc[:document] = extracted_text.gsub(/\p{Cc}/, "")
+              
+              File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                  
+
+
+              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+              @list.each do |l|
+                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                @scan = @attachment.scans.create
+                @scan[:image_file_name] = image_name[1]
+                @scan[:image_content_type] = 'image/jpg'
+                @scan.save
+              end
+              @doc.save
+            end
+
+            if div.attributes['class'].to_s.include? "proj_pdf"
+              @attachment = @doc.attachments.create
+              path = 'downloads/' + @attachment.id.to_s + '.pdf'
+              response = agent.get_file("http://www.obrnadzor.gov.ru/ru/docs/documents/" + link)
+              #"http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?id_4=5182"
+              File.open(path, 'wb') {|f| f << response}
+              @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
+              @attachment[:file_content_type] = 'application/pdf'
+              @attachment.save
+
+              extracted_text = ''
+              path = 'downloads/' + @attachment.id.to_s + '.pdf'
+              pdf = Magick::ImageList.new(path) {self.density = 300} 
+              pdf.each do |page_img|
+                img = RTesseract.new(page_img, :lang => "rus")
+                extracted_text += img.to_s
+              end
+              @doc[:document] = extracted_text
+
+              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                @list.each do |l|
+                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                
+                @scan = @attachment.scans.create
+                @scan[:image_file_name] = image_name[1]
+                @scan[:image_content_type] = 'image/jpg'
+                @scan.save
+              end              
+              @doc.save
+            end
+            
+            #puts link
+            #puts title.squish
+
+            if div.attributes['class'].to_s.include? " proj_ "
+              @original = Doc.find(main_doc_id)
+              @original.updates << @doc
+              @original = nil
+            else
+              main_doc_id = @doc.id
+            end
+            #puts div.at('a').text
+
+
+            #puts "__________________________"
+          end
+          #break
+        end
+      end
+
+
+
+      break
+      i += 1
+
+    end
+
+        while true do
       #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
       #puts i
@@ -467,6 +661,10 @@ end
         break
       end
     end
+
+
+
+
 
     #__________________________
     #puts page.links_with(:class => 'media-item-link').count
