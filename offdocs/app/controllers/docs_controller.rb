@@ -15,10 +15,12 @@ class DocsController < ApplicationController
   # GET /docs.json
   def index
     @docs = Doc.all.order("created_at DESC")
+
     if params[:search]
     #  @docs = Doc.search(params[:search]).order("created_at DESC")
     @search = Doc.search do
-     fulltext params[:search]
+     #fulltext params[:search]
+     paginate :page => 1, :per_page => 5
    end
    @docs = @search.results
  else
@@ -30,9 +32,6 @@ end
   # GET /docs/1
   # GET /docs/1.json
   def show
-    if !@doc.updates.empty?
-      flash.now[:notice] = "Something has changed"
-    end
    # @pdf = Magick::ImageList.new(@doc.attachment.path) {self.density = 100}
     #@imgs = Docsplit.extract_images(@doc.attachment.path, :size => '1000x', :format => [:jpg], :path => '/downloads/tmp')
 
