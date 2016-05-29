@@ -18,12 +18,26 @@
 @import "bootstrap";
 
 
-#source, #title, #source-cell, #title-cell {
-	border: 1px solid black;
-}
+.table {
+  text-align: center;
+  }
 
 .carousel-inner > .item > img {
     margin: 0 auto;
+}
+
+
+.edit {
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+.row {
+  margin: 5px 0px;
+}
+
+.date-row {
+  margin-bottom: 20px;
 }
 
 .carousel-indicators-numbers {

@@ -23,7 +23,7 @@
 
 			<div id="navbarCollapse" class="collapse navbar-collapse">
 
-				<ul class="nav navbar-nav navbar-right">
+				<ul id="sign-links" class="nav navbar-nav navbar-right">
 					<% if user_signed_in? %>
 					<li> <%= link_to current_user.email, edit_user_registration_path %> </li>
 					<li> <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %> </li>
@@ -39,7 +39,7 @@
 	
 	<div class="col-md-12">
 		<div class = "row">
-		
+
 			<div class="col-md-4">
 				
 				<%= form_tag docs_path, :method => "get", id: "search-form-titles", class: "input-group" do %>
@@ -71,21 +71,28 @@
 				<% end %>
 				
 			</div>
-</div>
 		</div>
+	</div>
+	
+	<div class = "col-md-12">
+		<div class = "row date-row">
+		<div class="col-sm-offset-4 col-md-4">
+			<%= form_tag docs_path, :method => "get", id: "search-form-document", class: "form-inline"  do %>
+			
+				<%= text_field_tag :start_time, params[:start_time], placeholder: "Дата", :data => {:provide => 'datepicker'}, "data-date-format" => "dd/mm/yyyy", class: "form-control left-date" %>
+			
+			
+				<%= text_field_tag :end_time, params[:end_time], placeholder: "Дата", :data => {:provide => 'datepicker' }, "data-date-format" => "dd/mm/yyyy", class: "form-control right-date" %>
+			
+
+			<%= submit_tag "Search", class: "btn btn-primary" %>
 
 
-				<div class="col-md-4">
-				
-				<%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
-				<%= text_field_tag :start_time, params[:start_time], placeholder: "Левая граница", :data => {:provide => 'datepicker'}, "data-date-format" => "dd/mm/yyyy", class: "form-control" %>
-				<%= text_field_tag :end_time, params[:end_time], placeholder: "Левая граница", :data => {:provide => 'datepicker' }, "data-date-format" => "dd/mm/yyyy", class: "form-control" %>
-				<span class = "input-group-btn">
-					<%= submit_tag "Search", class: "btn btn-primary" %>
-				</span>
-				<% end %>
-				
+			<% end %>
 			</div>
+		</div>
+	</div>
+
 	
 	
 
@@ -97,7 +104,7 @@
 	<% end %>
 	
 
-	<div class="col-md-9 center-block" id="container">
+	<div class="col-md-12 center-block">
 		<%= yield %>
 	</div>
 

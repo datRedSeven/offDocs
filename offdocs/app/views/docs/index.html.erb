@@ -1,33 +1,31 @@
-<h1>Docs</h1>
-<div class = "container-fluid">
-<table>
-  <thead>
-    <tr>
-      <th id = 'title'>Title</th>
-      <th id = 'source'>Source</th>
-      <th colspan="3"></th>
-    </tr>
-  </thead>
-  
+
+<table class="table table-hover table-bordered">
+
+
   <tbody>
 
     <% @docs.each do |doc| %>
 
       <tr>
-        <td id = 'title-cell'><%= doc.title %></td>
-        <td id = 'source-cell'><%= doc.source %></td>
-        <td><%= link_to 'Show', doc %></td>
-        <% if current_user.try(:admin?) %>
-          <td><%= link_to 'Edit', edit_doc_path(doc) %></td>
-          <td><%= link_to 'Destroy', doc, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+        <td id = 'title-cell'>
+        <%= link_to doc.title, doc %>
+                  <% if current_user.try(:admin?) %>
+                  
+          <%= link_to 'Edit', edit_doc_path(doc), class: "btn btn-primary btn-xs pull-right edit" %>
+          <%= link_to 'Destroy', doc, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger btn-xs pull-right destroy" %>
+          
         <% end %>
+        </td>
+
+        <td id = 'source-cell'><%= doc.source %></td>
+
       </tr>
     <% end %>
   </tbody>
 </table>
 
 <%= paginate @docs %>
-</div>
+
 <br>
 <% if current_user.try(:admin?) %>
 <%= link_to 'New Doc', new_doc_path %>
