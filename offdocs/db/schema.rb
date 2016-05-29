@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20160523192538) do
+ActiveRecord::Schema.define(version: 20160529121213) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -33,14 +33,16 @@ ActiveRecord::Schema.define(version: 20160523192538) do
     t.string   "source_link"
     t.text     "document"
     t.string   "url"
-    t.datetime "created_at",              null: false
-    t.datetime "updated_at",              null: false
+    t.datetime "created_at",                              null: false
+    t.datetime "updated_at",                              null: false
     t.integer  "user_id"
     t.string   "attachment_file_name"
     t.string   "attachment_content_type"
     t.integer  "attachment_file_size"
     t.datetime "attachment_updated_at"
     t.integer  "original_id"
+    t.date     "date_published"
+    t.boolean  "project",                 default: false
   end
 
   add_index "docs", ["original_id"], name: "index_docs_on_original_id", using: :btree

@@ -5,6 +5,7 @@ require 'mechanize'
 require 'docsplit'
 require 'json'
 require 'zip'
+require 'Kaminari'
 
 class DocsController < ApplicationController
   before_action :set_doc, only: [:show, :edit, :update, :destroy]
@@ -14,20 +15,33 @@ class DocsController < ApplicationController
   # GET /docs
   # GET /docs.json
   def index
-    @docs = Doc.all.order("created_at DESC")
-
-    if params[:search]
-    #  @docs = Doc.search(params[:search]).order("created_at DESC")
-    @search = Doc.search do
-     #fulltext params[:search]
-     paginate :page => 1, :per_page => 5
-   end
-   @docs = @search.results
- else
-  @docs = Doc.all.order("created_at DESC")
-end
-
-end
+    #@docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
+    if params.present?
+      @search = Doc.search do
+        if params[:titles].present?
+          keywords params[:titles], :fields => :title
+          #fulltext params[:title]
+        end
+        if params[:documents].present?
+          keywords params[:documents], :fields => :document
+        end
+        if params[:departments].present?
+          keywords params[:departments], :fields => :source
+        end
+        if params[:start_time].present? and params[:end_time].present?
+          with(:date_published).between(params[:start_time]..params[:end_time])
+        end
+        #@search = Doc.search do
+        #  fulltext params[:search]
+        paginate :page => params[:page], :per_page => 15
+      end
+      @docs = @search.results
+      #else
+      #  @docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
+    else
+      @docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
+    end
+  end
 
   # GET /docs/1
   # GET /docs/1.json
@@ -142,6 +156,8 @@ end
     i = 1
 
 
+
+
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
 
     #-------
@@ -162,9 +178,42 @@ end
             
             @doc = current_user.docs.create
 
+
+
             link = div.at('a').attributes['href'].to_s
             title = div.at('a').text.to_s
+
+            # ot or without ot
+            # month written or dots
+
+            if title.include? " № "
+              date_added = title.split(" № ")
+              date_added = date_added[0]
+              if date_added.include? " от "
+                date_added = date_added.split(" от ")
+                date_added = date_added[1]
+                date_added = date_added.squish
+              else
+                date_added = date_added.split(" ")
+                date_added = date_added.last
+              end
+
+
+              if date_added.include? " "
+                month = date_added.split(" ")
+                tmp_month = month[1]
+                tmp_month = I18n.t tmp_month
+                date_added = month.first + " " + tmp_month + " " + month.last
+                @doc[:date_published] = date_added
+              else
+                @doc[:date_published] = date_added
+              end
+            end
+
+
+
             @doc[:title] = title
+            @doc[:source] = "Федеральная служба по надзору в сфере образования и науки"
             if div.attributes['class'].to_s.include? "proj_zip"
               zip_path = 'downloads/' + @doc.id.to_s + '.zip'
               response = agent.get_file("http://www.obrnadzor.gov.ru/ru/docs/documents/" + link)
@@ -393,6 +442,19 @@ end
             end
             @doc = current_user.docs.build
             #@doc[:title] = tmp_link.text
+            if link.text.include? " № "
+              date_added = link.text
+              date_added = date_added.split("г. № ")
+              date_added = date_added[0].squish
+              date_added = date_added.split(" от ")
+              date_added = date_added[1]
+              month = date_added.split(" ")
+              tmp_month = month[1]
+              tmp_month = I18n.t tmp_month
+              date_added = month.first + " " + tmp_month + " " + month.last
+              @doc[:date_published] = date_added              
+            end
+
             @doc[:title] = link.text
             html = ''
             #-------------------------
@@ -404,6 +466,7 @@ end
               end
             end
             @doc[:document] = html
+            @doc[:source] = "Министерство образования и науки Российской Федерации"
             @doc.save
             #-----------------------
 
@@ -485,13 +548,11 @@ end
     #_______________________________
       #id = 9648
       id = record['ID']
-      puts "got id " + id.to_s
       url = "http://regulation.gov.ru/Npa/GetAjaxForm?id=#{id}&mnemonic=Npa_AreaRegulation_ListView&readonly=true&_dialogid=dialog_3d21f08364fa404db62e4375f3a432a1&_widgetid=widget_ffed2bcef4094d918ecb9978d2c03d99&_dialogtype=Modal&_parentid=&_currentid="
       agent.get(url) do |page|
         tmp_links = page.links_with(:class => 'file-link')
 
         if !tmp_links.empty?
-          puts "got links"
           if Doc.where("title = ?", record['Title']).empty?
 
 
@@ -564,15 +625,25 @@ end
 
             @doc = current_user.docs.create
             @doc[:title] = record['Title']
+            @doc[:project] = true
+            date_added = record['PublishDate'].to_s
+            date_added = date_added.split(" ")
+            date_added = date_added[0]
+            @doc[:date_published] = date_added
             tmp_links.each do |link|
           #puts tmp_links.first.attributes['title']
 
               if link.attributes['title'].include? ".doc" or link.attributes['title'].include? ".docx"
-                puts "in doc section"
+                
                 if !link.href.nil?
+
+                  #contains принятый project = false
                   @attachment = @doc.attachments.create
                   tmp_title = link.attributes['title'].split('Скачать:')
                   @attachment[:title] = tmp_title[1]
+                  if tmp_title[1].include? "Итоговый"
+                    @doc[:project] = false
+                  end
 
 
                   path = 'downloads/' + @attachment.id.to_s + '.doc'
@@ -604,10 +675,13 @@ end
 
               if link.attributes['title'].include? ".pdf"
                 if !link.href.nil?
-                  puts "in pdf section"
+                  
                   @attachment = @doc.attachments.create
                   tmp_title = link.attributes['title'].split('Скачать:')
                   @attachment[:title] = tmp_title[1]
+                  if tmp_title[1].include? "Итоговый"
+                    @doc[:project] = false
+                  end
 
                   path = 'downloads/' + @attachment.id.to_s + '.pdf'
                   response = agent.get_file("http://regulation.gov.ru/" + link.href)
@@ -638,6 +712,7 @@ end
                   end
                 end
               end
+              @doc[:source] = "Федеральный портал проектов нормативных правовых актов"
               @doc.save
               if !@original.nil?
                 @original.updates << @doc
@@ -689,6 +764,6 @@ end
 
     # Never trust parameters from the scary internet, only allow the white list through.
     def doc_params
-      params.require(:doc).permit(:title, :source, :source_link, :document, :url, :attachment_file_name, :original_id)
+      params.require(:doc).permit(:title)
     end
   end

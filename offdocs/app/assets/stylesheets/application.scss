@@ -12,21 +12,11 @@
  *
  *= require_tree .
  *= require_self
+ *= require bootstrap-datepicker3
  */
 @import "bootstrap-sprockets";
 @import "bootstrap";
 
-#search {
-	heigth: 34px;
-}
-
-#title {
-	width: 70%;
-}
-
-#source {
-	width: 30%;
-}
 
 #source, #title, #source-cell, #title-cell {
 	border: 1px solid black;
@@ -43,7 +33,7 @@
       width: 30px;
       height: 30px;
       border: none;
-      border-radius: 100%;
+      border-radius: 0%;
       line-height: 30px;
       color: #fff;
       background-color: #999;
@@ -64,4 +54,5 @@
 .carousel-inner {
    margin-bottom:50px;
 }
+
 
