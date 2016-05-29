@@ -13,6 +13,17 @@
 </p>
 
 
+  <% if !current_user.liked? @doc %>
+    <%= form_tag controller: "docs", action: "favorite", method: "post" do %>
+      <%= submit_tag "Favorite", class: 'btn btn-primary btn-sm' %>
+    <% end %>
+  <% else %>
+    <%= form_tag controller: "docs", action: "unfavorite", method: "post" do %>
+      <%= submit_tag "Unfavorite", class: 'btn btn-primary btn-sm' %>
+    <% end %>
+  <% end %>
+
+
 
 
 <p>

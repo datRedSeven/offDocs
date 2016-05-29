@@ -37,6 +37,7 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
+    acts_as_votable (0.10.0)
     addressable (2.4.0)
     afm (0.2.2)
     arel (6.0.3)
@@ -51,7 +52,7 @@ GEM
       autoprefixer-rails (>= 5.2.1)
       sass (>= 3.3.4)
     builder (3.2.2)
-    byebug (9.0.4)
+    byebug (9.0.5)
     climate_control (0.0.3)
       activesupport (>= 3.0)
     cocaine (0.5.8)
@@ -223,6 +224,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  acts_as_votable (~> 0.10.0)
   addressable (~> 2.4)
   bootstrap-datepicker-rails (~> 1.6, >= 1.6.1.1)
   bootstrap-sass (~> 3.3, >= 3.3.6)

@@ -22,6 +22,14 @@
   text-align: center;
   }
 
+.btn {
+  border-radius: 0%;
+}
+
+.left-date, .right-date {
+  border-radius: 0%;
+}
+
 .carousel-inner > .item > img {
     margin: 0 auto;
 }
@@ -44,13 +52,14 @@
     li {
       text-indent: 0;
       margin: 0 2px;
+      text-align: center;
       width: 30px;
       height: 30px;
-      border: none;
+      border: 1px solid black;
       border-radius: 0%;
       line-height: 30px;
-      color: #fff;
-      background-color: #999;
+      color: black;
+      background-color: #fff;
       transition: all 0.25s ease;
       &.active, &:hover {
         margin: 0 2px;

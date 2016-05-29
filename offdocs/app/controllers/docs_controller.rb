@@ -8,7 +8,7 @@ require 'zip'
 require 'Kaminari'
 
 class DocsController < ApplicationController
-  before_action :set_doc, only: [:show, :edit, :update, :destroy]
+  before_action :set_doc, only: [:show, :edit, :update, :destroy, :favorite, :unfavorite]
   before_action :set_attachment, only: [:document_download]
   before_filter :authenticate_user!, except: [:index]
 
@@ -749,6 +749,19 @@ class DocsController < ApplicationController
 
   def document_download
     send_file @attachment.file.path, :type => @attachment.file_content_type, :x_sendfile=>true
+  end
+
+  def favorite
+    @doc.liked_by current_user
+    redirect_to @doc
+  end
+
+  def unfavorite
+    @doc.unliked_by current_user
+    redirect_to @doc
+  end
+
+  def favorites
   end
 
 
