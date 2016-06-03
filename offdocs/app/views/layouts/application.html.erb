@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Offdocs</title>
+	<title>OffDocs</title>
 	<%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
 	<%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
 	<%= csrf_meta_tags %>
@@ -18,19 +18,20 @@
 					<span class="icon-bar"></span>
 					<span class="icon-bar"></span>
 				</button>
-				<div class="navbar-brand"> <%= link_to 'OffDocs', root_path %> </div>
+				<div class="navbar-brand"> <%= link_to 'OffDocs', root_path %>
+				</div>
 			</div>
 
 			<div id="navbarCollapse" class="collapse navbar-collapse">
 
 				<ul id="sign-links" class="nav navbar-nav navbar-right">
 					<% if user_signed_in? %>
-					<li> <%= link_to 'Watching', favorites_path %> </li>
+					<li> <%= link_to 'Избранное', favorites_path %> </li>
 					<li> <%= link_to current_user.email, edit_user_registration_path %> </li>
-					<li> <%= link_to 'Sign out', destroy_user_session_path, :method => :delete %> </li>
+					<li> <%= link_to 'Выход', destroy_user_session_path, :method => :delete %> </li>
 					<% else %>
-					<li> <%= link_to 'Sign up', new_user_registration_path %> </li>
-					<li> <%= link_to 'Sign in', new_user_session_path %> </li>
+					<li> <%= link_to 'Зарегистрироваться', new_user_registration_path %> </li>
+					<li> <%= link_to 'Войти', new_user_session_path %> </li>
 					<% end %>
 				</ul>
 
@@ -38,61 +39,7 @@
 		</nav>
 	</div>
 	
-	<div class="col-md-12">
-		<div class = "row">
 
-			<div class="col-md-4">
-				
-				<%= form_tag docs_path, :method => "get", id: "search-form-titles", class: "input-group" do %>
-				<%= text_field_tag :titles, params[:titles], placeholder: "Поиск по названию", class: "form-control" %>
-				<span class = "input-group-btn">
-					<%= submit_tag "Search", class: "btn btn-primary" %>
-				</span>
-				<% end %>
-				
-			</div>
-
-			<div class="col-md-4">
-				
-				<%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
-				<%= text_field_tag :documents, params[:documents], placeholder: "Поиск по тексту", class: "form-control" %>
-				<span class = "input-group-btn">
-					<%= submit_tag "Search", class: "btn btn-primary" %>
-				</span>
-				<% end %>
-				
-			</div>
-			<div class="col-md-4">
-				
-				<%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
-				<%= text_field_tag :departments, params[:departments], placeholder: "Поиск по источнику", class: "form-control" %>
-				<span class = "input-group-btn">
-					<%= submit_tag "Search", class: "btn btn-primary" %>
-				</span>
-				<% end %>
-				
-			</div>
-		</div>
-	</div>
-	
-	<div class = "col-md-12">
-		<div class = "row date-row">
-		<div class="col-sm-offset-4 col-md-4">
-			<%= form_tag docs_path, :method => "get", id: "search-form-document", class: "form-inline"  do %>
-			
-				<%= text_field_tag :start_time, params[:start_time], placeholder: "Дата", :data => {:provide => 'datepicker'}, "data-date-format" => "dd/mm/yyyy", class: "form-control left-date" %>
-			
-			
-				<%= text_field_tag :end_time, params[:end_time], placeholder: "Дата", :data => {:provide => 'datepicker' }, "data-date-format" => "dd/mm/yyyy", class: "form-control right-date" %>
-			
-
-			<%= submit_tag "Search", class: "btn btn-primary" %>
-
-
-			<% end %>
-			</div>
-		</div>
-	</div>
 
 	
 	

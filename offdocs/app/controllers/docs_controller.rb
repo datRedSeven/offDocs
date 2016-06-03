@@ -46,6 +46,7 @@ class DocsController < ApplicationController
   # GET /docs/1
   # GET /docs/1.json
   def show
+    #Usermailer.sample_email(current_user).deliver_now
    # @pdf = Magick::ImageList.new(@doc.attachment.path) {self.density = 100}
     #@imgs = Docsplit.extract_images(@doc.attachment.path, :size => '1000x', :format => [:jpg], :path => '/downloads/tmp')
 
@@ -150,6 +151,8 @@ class DocsController < ApplicationController
   end
 
   def import_docs
+
+    @update_list = []
     #@doc = current_user.docs.build
     #@doc.save
     agent = Mechanize.new
@@ -165,23 +168,59 @@ class DocsController < ApplicationController
     
     while true do 
       main_doc_id = nil
+
       url = "http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?&from_4=#{i}"
+
+      page_number = agent.get(url).links_with(:href => /from_4/).last
+      
+      puts page_number
+      i = page_number.text.to_i
+      
+      
+      url = "http://www.obrnadzor.gov.ru/ru/docs/documents/index.php?&from_4=#{i}"
+
       if agent.get(url).links_with(:href => /id_4=/).count == 0
         break
       end
       agent.get(url) do |page|
         divs = page.search('div.proj_ttl')
-        divs.each do |div| 
-          #puts div
+        divs.reverse.each do |div| 
+          puts div
           #puts div.attributes['class']
           if Doc.where("title = ?", div.at('a').text).empty?
+
+            link = div.at('a').attributes['href'].to_s
+            title = div.at('a').text.to_s
+
+            if title.include? "О внесении изменения" or title.include? "О внесении изменений"
+              #str = tmp_link.text
+              str = title
+              if str.include? "О внесении изменения"
+                str = str.split("О внесении изменения")
+              else
+                str = str.split("О внесении изменений")
+              end
+              if str[1].include? " от "
+                str = str[1]
+                str = str.split(" № ")
+                date = str[0]
+                date = date.split(" от ")
+                date = date[1]
+                str = str[1]
+                #str = str.split(" ")
+                str = str[0].gsub(/[^\d,\.]/, '')
+
+                @prev_doc = Doc.where('title LIKE ? and title LIKE ?', '%№ ' + str + '%', '%' + date + '%').all
+                @prev_doc = @prev_doc.where.not('title LIKE ?', '%изменен%').first
+              end
+            end
+
             
             @doc = current_user.docs.create
 
 
 
-            link = div.at('a').attributes['href'].to_s
-            title = div.at('a').text.to_s
+
 
             # ot or without ot
             # month written or dots
@@ -231,6 +270,7 @@ class DocsController < ApplicationController
               File.delete(Rails.root.join('downloads').to_s + "/" + @doc.id.to_s + ".zip")
 
               list = Dir[Rails.root.join('downloads', 'temp').to_s + "/**/*.pdf"]
+              extracted_text = ''
               list.each do |l|
                 att_name = l.split('/').last
                 FileUtils.mv(l, Rails.root.join('downloads').to_s + '/')
@@ -241,20 +281,20 @@ class DocsController < ApplicationController
                 @attachment[:file_content_type] = 'application/pdf'
                 @attachment.save
 
-                extracted_text = ''
+                #extracted_text = ''
                 path = 'downloads/' + @attachment.id.to_s + '.pdf'
                 pdf = Magick::ImageList.new(path) {self.density = 300} 
                 pdf.each do |page_img|
                   img = RTesseract.new(page_img, :lang => "rus")
                   extracted_text += img.to_s
                 end
-                @doc[:document] = extracted_text
+                
 
                 Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
                 @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
                 @list.each do |l|
                   image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
-                
+
                   @scan = @attachment.scans.create
                   @scan[:image_file_name] = image_name[1]
                   @scan[:image_content_type] = 'image/jpg'
@@ -262,6 +302,7 @@ class DocsController < ApplicationController
                 end
 
               end
+              @doc[:document] = extracted_text
               FileUtils.rm_rf(Rails.root.join('downloads', 'temp').to_s + '/')
               @doc.save
             end
@@ -281,7 +322,7 @@ class DocsController < ApplicationController
               @doc[:document] = extracted_text.gsub(/\p{Cc}/, "")
               
               File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
-                  
+
 
 
               Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
@@ -311,7 +352,7 @@ class DocsController < ApplicationController
               @doc[:document] = extracted_text.gsub(/\p{Cc}/, "")
               
               File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
-                  
+
 
 
               Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
@@ -346,8 +387,8 @@ class DocsController < ApplicationController
               @doc[:document] = extracted_text
 
               Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
-                @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
-                @list.each do |l|
+              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+              @list.each do |l|
                 image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
                 
                 @scan = @attachment.scans.create
@@ -369,6 +410,11 @@ class DocsController < ApplicationController
               main_doc_id = @doc.id
             end
             #puts div.at('a').text
+            if !@prev_doc.nil?
+              @prev_doc.updates << @doc
+              @update_list << @prev_doc
+            end
+            @prev_doc = nil
 
 
             #puts "__________________________"
@@ -380,11 +426,13 @@ class DocsController < ApplicationController
 
 
       break
-      i += 1
+      i -= 1
 
     end
 
-        while true do
+    i = 1
+
+    while true do
       #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
     #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
       #puts i
@@ -402,7 +450,7 @@ class DocsController < ApplicationController
     while i > 0 do
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
       agent.get(url) do |page|
-        page.links_with(:class => 'media-item-link').each do |link|
+        page.links_with(:class => 'media-item-link').reverse.each do |link|
           #puts link.text
           tmp_page = agent.click(link)
           #pp pagex
@@ -473,11 +521,12 @@ class DocsController < ApplicationController
 
 
 
-          
-          
+
+
             #---------------------------
             if !@original.nil?
               @original.updates << @doc
+              @update_list << @original
             end
             @original = nil
             #------------------
@@ -494,12 +543,12 @@ class DocsController < ApplicationController
                 @attachment.save
               #@doc[:attachment_file_name] = file
               #doc[:attachment_content_type] = 'application/pdf'
-              end
-              
-              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
-              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
-              @list.each do |l|
-                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+            end
+
+            Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+            @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+            @list.each do |l|
+              image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
                 #puts x[1]
                 @scan = @attachment.scans.create
                 @scan[:image_file_name] = image_name[1]
@@ -508,16 +557,16 @@ class DocsController < ApplicationController
               end
 
             end
-          
+
 
             #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
             #@doc.save
             #----------------------
 
         #    break #BREAK HERE TEST
-          end
-          
-        end
+      end
+
+    end
         #break #$SFFQFQEF
       end
       i -= 1
@@ -554,9 +603,6 @@ class DocsController < ApplicationController
 
         if !tmp_links.empty?
           if Doc.where("title = ?", record['Title']).empty?
-
-
-
             if record['Title'].include? "О внесении изменения" or record['Title'].include? "О внесении изменений"
               #str = tmp_link.text
               str = record['Title']
@@ -622,7 +668,7 @@ class DocsController < ApplicationController
 
 
 
-
+            extracted_text = ''
             @doc = current_user.docs.create
             @doc[:title] = record['Title']
             @doc[:project] = true
@@ -633,9 +679,9 @@ class DocsController < ApplicationController
             tmp_links.each do |link|
           #puts tmp_links.first.attributes['title']
 
-              if link.attributes['title'].include? ".doc" or link.attributes['title'].include? ".docx"
-                
-                if !link.href.nil?
+          if link.attributes['title'].include? ".doc" or link.attributes['title'].include? ".docx"
+
+            if !link.href.nil?
 
                   #contains принятый project = false
                   @attachment = @doc.attachments.create
@@ -654,9 +700,9 @@ class DocsController < ApplicationController
                   @attachment.save
 
                   Docsplit.extract_text(path, ocr: false, output: Rails.root.join('downloads').to_s)
-                  extracted_text = File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
-                  @doc[:document] = extracted_text.gsub(/\p{Cc}/, "")
-              
+                  extracted_text += File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                  extracted_text = extracted_text.gsub(/\p{Cc}/, "")
+
                   File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
                   
 
@@ -675,7 +721,7 @@ class DocsController < ApplicationController
 
               if link.attributes['title'].include? ".pdf"
                 if !link.href.nil?
-                  
+
                   @attachment = @doc.attachments.create
                   tmp_title = link.attributes['title'].split('Скачать:')
                   @attachment[:title] = tmp_title[1]
@@ -691,20 +737,20 @@ class DocsController < ApplicationController
                   @attachment.save
 
 
-                  extracted_text = ''
+                  #extracted_text = ''
                   pdf = Magick::ImageList.new(path) {self.density = 300} 
                   pdf.each do |page_img|
                     img = RTesseract.new(page_img, :lang => "rus")
                     extracted_text += img.to_s
                   end
-                  @doc[:document] = extracted_text
+                  #@doc[:document] = extracted_text
                   
 
                   Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
                   @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
                   @list.each do |l|
                     image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
-                
+
                     @scan = @attachment.scans.create
                     @scan[:image_file_name] = image_name[1]
                     @scan[:image_content_type] = 'image/jpg'
@@ -712,33 +758,226 @@ class DocsController < ApplicationController
                   end
                 end
               end
+              #if @doc.attachments.empty?
+              #  @doc.destroy
+              #else
               @doc[:source] = "Федеральный портал проектов нормативных правовых актов"
+              @doc[:document] = extracted_text
               @doc.save
               if !@original.nil?
                 @original.updates << @doc
+                @update_list << @original
               end
               @original = nil
-              if !@changes.nil?
+              if !@changes.empty?
                 @changes.each do |change|
                   @doc.updates << change
                 end
+                @update_list << @doc
               end
-              @changes = nil
-      #  response = agent.get_file("http://regulation.gov.ru/" + tmp_links.first.href)
-      #  File.open(Rails.root.join('downloads').to_s + '/1.doc', 'wb') {|f| f << response}
+              @changes = []
+              #end
+              #  response = agent.get_file("http://regulation.gov.ru/" + tmp_links.first.href)
+              #  File.open(Rails.root.join('downloads').to_s + '/1.doc', 'wb') {|f| f << response}
+            end
+          else
+
+            if Doc.where("title = ?", record['Title']).first.project? and !Doc.where("title = ?", record['Title']).first.attachments.empty?
+              @proj = Doc.where("title = ?", record['Title']).first
+              if tmp_links.count != @proj.attachments.count
+                tmp_links.each do |link|
+                  tmp_title = link.attributes['title'].split('Скачать:')
+                  if @proj.attachments.where("title = ?", tmp_title[1]).empty?
+                    extracted_text = @proj.document
+                    if link.attributes['title'].include? ".doc" or link.attributes['title'].include? ".docx"
+
+                      if !link.href.nil?
+
+                      #contains принятый project = false
+                      @attachment = @proj.attachments.create
+                      tmp_title = link.attributes['title'].split('Скачать:')
+                      @attachment[:title] = tmp_title[1]
+                      if tmp_title[1].include? "Итоговый"
+                        @proj[:project] = false
+                      end
+
+
+                      path = 'downloads/' + @attachment.id.to_s + '.doc'
+                      response = agent.get_file("http://regulation.gov.ru/" + link.href)
+                      File.open(path, 'wb') {|f| f << response}
+                      @attachment[:file_file_name] = @attachment.id.to_s + '.doc'
+                      @attachment[:file_content_type] = 'application/doc'
+                      @attachment.save
+
+                      Docsplit.extract_text(path, ocr: false, output: Rails.root.join('downloads').to_s)
+                      extracted_text += File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                        #extracted_text += @proj.document
+                        extracted_text = extracted_text.gsub(/\p{Cc}/, "")
+
+                        File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+
+
+
+                        Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                        @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                        @list.each do |l|
+                          image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                          @scan = @attachment.scans.create
+                          @scan[:image_file_name] = image_name[1]
+                          @scan[:image_content_type] = 'image/jpg'
+                          @scan.save
+                        end
+                      end
+                    end
+                    if link.attributes['title'].include? ".pdf"
+                      if !link.href.nil?
+
+                        @attachment = @proj.attachments.create
+                        tmp_title = link.attributes['title'].split('Скачать:')
+                        @attachment[:title] = tmp_title[1]
+                        if tmp_title[1].include? "Итоговый"
+                          @proj[:project] = false
+                        end
+
+                        path = 'downloads/' + @attachment.id.to_s + '.pdf'
+                        response = agent.get_file("http://regulation.gov.ru/" + link.href)
+                        File.open(path, 'wb') {|f| f << response}
+                        @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
+                        @attachment[:file_content_type] = 'application/pdf'
+                        @attachment.save
+
+
+                        extracted_text = ''
+                        pdf = Magick::ImageList.new(path) {self.density = 300} 
+                        pdf.each do |page_img|
+                          img = RTesseract.new(page_img, :lang => "rus")
+                          extracted_text += img.to_s
+                        end
+                        #@doc[:document] = extracted_text
+
+
+                        Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                        @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                        @list.each do |l|
+                          image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+
+                          @scan = @attachment.scans.create
+                          @scan[:image_file_name] = image_name[1]
+                          @scan[:image_content_type] = 'image/jpg'
+                          @scan.save
+                        end
+                      end
+                    end
+                    @proj[:document] = extracted_text
+
+                    @proj.save
+                    @update_list << @proj
+                    #@proj = nil
+                  end
+                end
+              end
+            else
+              @proj = Doc.where("title = ?", record['Title']).first
+              extracted_text = ''
+              tmp_links.each do |link|
+                tmp_title = link.attributes['title'].split('Скачать:')
+                if link.attributes['title'].include? ".doc" or link.attributes['title'].include? ".docx"
+                  if !link.href.nil?
+                    @attachment = @proj.attachments.create
+                    tmp_title = link.attributes['title'].split('Скачать:')
+                    @attachment[:title] = tmp_title[1]
+                    if tmp_title[1].include? "Итоговый"
+                      @proj[:project] = false
+                    end
+
+
+                    path = 'downloads/' + @attachment.id.to_s + '.doc'
+                    response = agent.get_file("http://regulation.gov.ru/" + link.href)
+                    File.open(path, 'wb') {|f| f << response}
+                    @attachment[:file_file_name] = @attachment.id.to_s + '.doc'
+                    @attachment[:file_content_type] = 'application/doc'
+                    @attachment.save
+
+                    Docsplit.extract_text(path, ocr: false, output: Rails.root.join('downloads').to_s)
+                    extracted_text += File.read(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                    #extracted_text += @proj.document
+                    extracted_text = extracted_text.gsub(/\p{Cc}/, "")
+
+                    File.delete(Rails.root.join('downloads').to_s + "/" + @attachment.id.to_s + ".txt")
+                    Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                    @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                    @list.each do |l|
+                      image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+                      @scan = @attachment.scans.create
+                      @scan[:image_file_name] = image_name[1]
+                      @scan[:image_content_type] = 'image/jpg'
+                      @scan.save
+                    end
+                  end
+                end
+                if link.attributes['title'].include? ".pdf"
+                  if !link.href.nil?
+
+                    @attachment = @proj.attachments.create
+                    tmp_title = link.attributes['title'].split('Скачать:')
+                    @attachment[:title] = tmp_title[1]
+                    if tmp_title[1].include? "Итоговый"
+                      @proj[:project] = false
+                    end
+
+                    path = 'downloads/' + @attachment.id.to_s + '.pdf'
+                    response = agent.get_file("http://regulation.gov.ru/" + link.href)
+                    File.open(path, 'wb') {|f| f << response}
+                    @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
+                    @attachment[:file_content_type] = 'application/pdf'
+                    @attachment.save
+
+
+                    extracted_text = ''
+                    pdf = Magick::ImageList.new(path) {self.density = 300} 
+                    pdf.each do |page_img|
+                      img = RTesseract.new(page_img, :lang => "rus")
+                      extracted_text += img.to_s
+                    end
+                    #@doc[:document] = extracted_text
+
+
+                    Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+                    @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+                    @list.each do |l|
+                      image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+
+                      @scan = @attachment.scans.create
+                      @scan[:image_file_name] = image_name[1]
+                      @scan[:image_content_type] = 'image/jpg'
+                      @scan.save
+                    end
+                  end
+                end
+                @proj[:document] = extracted_text
+                @proj.save
+                if !@proj.attachments.empty?
+                  @update_list << @proj
+                end
+              end
+            end
+              #@proj = nil
             end
           end
         end
+        i += 1
+        if i == 20
+          break
+        end
       end
-      i += 1
-      if i == 20
-        break
+
+
+      if !@update_list.empty?
+        User.where("subscription = 3").each do |user|
+          Usermailer.send_updates(current_user, @update_list).deliver_now
+        end
       end
-    end
-
-
-
-
+      @update_list = []
 
     #__________________________
     #puts page.links_with(:class => 'media-item-link').count
@@ -780,3 +1019,10 @@ class DocsController < ApplicationController
       params.require(:doc).permit(:title)
     end
   end
+
+
+
+
+
+
+  

@@ -1,11 +1,12 @@
 Rails.application.routes.draw do
-  devise_for :users
+  
   resources :docs 
   get '/import_docs' => 'docs#import_docs'
   get '/download' => 'docs#document_download', :as => :download
   post 'docs/:id/favorite' => 'docs#favorite'
   post 'docs/:id/unfavorite' => 'docs#unfavorite'
   get '/favorites' => 'docs#favorites'
+  devise_for :users, controllers: { sessions: "users/sessions", registrations: "users/registrations" }
   
 
 

@@ -1,0 +1,10 @@
+Обновления:
+    <% if @update_list.empty? %>
+    	<br>
+    	Изменений не найдено
+    <% else %>
+    <% @update_list.each do |update| %>
+    <br>
+	<%= link_to update.title, update %>
+	<% end %>
+	<% end %>

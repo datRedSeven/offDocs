@@ -28,7 +28,7 @@
 
 <p>
   <strong>Documents:</strong>
-  <% @doc.attachments.each do |attachment| %>
+  <% @doc.attachments.includes(:scans).each do |attachment| %>
       <%= attachment.title %>
       <br>
       <div class="container-fluid">

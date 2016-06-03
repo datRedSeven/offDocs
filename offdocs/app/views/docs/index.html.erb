@@ -1,3 +1,59 @@
+  <div class="col-md-12">
+    <div class = "row">
+
+      <div class="col-md-4">
+        
+        <%= form_tag docs_path, :method => "get", id: "search-form-titles", class: "input-group" do %>
+        <%= text_field_tag :titles, params[:titles], placeholder: "Поиск по названию", class: "form-control" %>
+        <span class = "input-group-btn">
+          <%= submit_tag "Search", class: "btn btn-primary" %>
+        </span>
+        <% end %>
+        
+      </div>
+
+      <div class="col-md-4">
+        
+        <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
+        <%= text_field_tag :documents, params[:documents], placeholder: "Поиск по тексту", class: "form-control" %>
+        <span class = "input-group-btn">
+          <%= submit_tag "Search", class: "btn btn-primary" %>
+        </span>
+        <% end %>
+        
+      </div>
+      <div class="col-md-4">
+        
+        <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
+        <%= text_field_tag :departments, params[:departments], placeholder: "Поиск по источнику", class: "form-control" %>
+        <span class = "input-group-btn">
+          <%= submit_tag "Search", class: "btn btn-primary" %>
+        </span>
+        <% end %>
+        
+      </div>
+    </div>
+  </div>
+  
+  <div class = "col-md-12">
+    <div class = "row date-row">
+    <div class="col-sm-offset-4 col-md-4">
+      <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "form-inline"  do %>
+      
+        <%= text_field_tag :start_time, params[:start_time], placeholder: "Дата", :data => {:provide => 'datepicker'}, "data-date-format" => "dd/mm/yyyy", class: "form-control left-date" %>
+      
+      
+        <%= text_field_tag :end_time, params[:end_time], placeholder: "Дата", :data => {:provide => 'datepicker' }, "data-date-format" => "dd/mm/yyyy", class: "form-control right-date" %>
+      
+
+      <%= submit_tag "Search", class: "btn btn-primary" %>
+
+
+      <% end %>
+      </div>
+    </div>
+  </div>
+
 
 <table class="table table-hover table-bordered">
 
@@ -8,13 +64,15 @@
 
       <tr>
         <td id = 'title-cell'>
-        <%= link_to doc.title, doc %>
-                  <% if current_user.try(:admin?) %>
-                  
-          <%= link_to 'Edit', edit_doc_path(doc), class: "btn btn-primary btn-xs pull-right edit" %>
-          <%= link_to 'Destroy', doc, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger btn-xs pull-right destroy" %>
+                          <% if current_user.try(:admin?) %>
+                            <%= link_to 'Удалить', doc, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger btn-xs pull-right destroy" %>
+          <%= link_to 'Редактировать', edit_doc_path(doc), class: "btn btn-primary btn-xs pull-right edit" %>
+
+        
+
           
         <% end %>
+        <%= link_to doc.title, doc %>
         </td>
 
         <td id = 'source-cell'><%= doc.source %></td>

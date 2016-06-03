@@ -38,6 +38,7 @@ gem 'rubyzip', '~> 1.2'
 gem 'kaminari', '~> 0.16.3'
 gem 'bootstrap-datepicker-rails', '~> 1.6', '>= 1.6.1.1'
 gem 'acts_as_votable', '~> 0.10.0'
+gem 'whenever', '~> 0.9.4'
 # Use ActiveModel has_secure_password
 # gem 'bcrypt', '~> 3.1.7'
 

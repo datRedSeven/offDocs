@@ -27,6 +27,18 @@
     <%= f.password_field :current_password, autocomplete: "off" %>
   </div>
 
+  <div class="field">
+    <%= f.radio_button(:subscription, 0) %>
+    <%= f.label(:subscription, "Не получать уведомления") %>
+    <%= f.radio_button(:subscription, 1) %>
+    <%= f.label(:subscription, "Каждую неделю") %>
+    <%= f.radio_button(:subscription, 2) %>
+    <%= f.label(:subscription, "Каждый день") %>
+    <%= f.radio_button(:subscription, 3) %>
+    <%= f.label(:subscription, "При изменении в документах") %>
+  </div>
+
+
   <div class="actions">
     <%= f.submit "Update" %>
   </div>
