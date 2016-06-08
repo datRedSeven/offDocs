@@ -20,6 +20,12 @@
 # available at http://guides.rubyonrails.org/i18n.html.
 
 en:
+  views:
+    pagination:
+      last: "Последняя »"
+      next: "След. ›"
+      first: "« Первая"
+      previous: "‹ Пред."
   hello: "Hello world"
   
   января: "january"
@@ -34,3 +40,16 @@ en:
   октября: "october"
   ноября: "november"
   декабря: "december"
+
+  Январь: "january"
+  Февраль: "february"
+  Март: "march"
+  Апрель: "april"
+  Май: "may"
+  Июнь: "june"
+  Июль: "july"
+  Август: "august"
+  Сентябрь: "september"
+  Октябрь: "october"
+  Ноябрь: "november"
+  Декабрь: "december"

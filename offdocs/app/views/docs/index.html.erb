@@ -1,91 +1,66 @@
   <div class="col-md-12">
-    <div class = "row">
 
-      <div class="col-md-4">
-        
-        <%= form_tag docs_path, :method => "get", id: "search-form-titles", class: "input-group" do %>
-        <%= text_field_tag :titles, params[:titles], placeholder: "Поиск по названию", class: "form-control" %>
-        <span class = "input-group-btn">
-          <%= submit_tag "Search", class: "btn btn-primary" %>
-        </span>
-        <% end %>
-        
-      </div>
 
-      <div class="col-md-4">
         
-        <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
-        <%= text_field_tag :documents, params[:documents], placeholder: "Поиск по тексту", class: "form-control" %>
-        <span class = "input-group-btn">
-          <%= submit_tag "Search", class: "btn btn-primary" %>
-        </span>
-        <% end %>
-        
-      </div>
-      <div class="col-md-4">
-        
-        <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "input-group"  do %>
-        <%= text_field_tag :departments, params[:departments], placeholder: "Поиск по источнику", class: "form-control" %>
-        <span class = "input-group-btn">
-          <%= submit_tag "Search", class: "btn btn-primary" %>
-        </span>
-        <% end %>
-        
-      </div>
-    </div>
-  </div>
-  
-  <div class = "col-md-12">
-    <div class = "row date-row">
-    <div class="col-sm-offset-4 col-md-4">
-      <%= form_tag docs_path, :method => "get", id: "search-form-document", class: "form-inline"  do %>
-      
+        <%= form_tag docs_path, :method => "get", id: "search-form-titles" do %>
+        <div class = "row search-row">
+        <div class = "col-md-4">
+        <%= text_field_tag :titles, params[:titles], placeholder: "Поиск по названию", class: "form-control search-text-fields" %>
+        </div>
+        <div class = "col-md-4">
+        <%= text_field_tag :documents, params[:documents], placeholder: "Поиск по тексту", class: "form-control search-text-fields" %>
+        </div>
+        <div class = "col-md-4">
+        <%= text_field_tag :departments, params[:departments], placeholder: "Поиск по источнику", class: "form-control search-text-fields" %>
+        </div>
+        </div>
+        <div class = "row date-row">
+        <div class = "col-md-4 form-inline col-md-offset-4">
         <%= text_field_tag :start_time, params[:start_time], placeholder: "Дата", :data => {:provide => 'datepicker'}, "data-date-format" => "dd/mm/yyyy", class: "form-control left-date" %>
-      
       
         <%= text_field_tag :end_time, params[:end_time], placeholder: "Дата", :data => {:provide => 'datepicker' }, "data-date-format" => "dd/mm/yyyy", class: "form-control right-date" %>
       
 
-      <%= submit_tag "Search", class: "btn btn-primary" %>
-
-
-      <% end %>
+        <%= submit_tag "Поиск ", class: "btn btn-primary btn-sm" %>
       </div>
+        
+        </div>
+        <% end %>
+
+
+  <% @docs.each do |doc| %>
+    <div class="row text-center">
+    <div class="col-md-2">
+              <% if !doc.attachments.empty? %>
+             <%= image_tag doc.attachments.first.scans.first.image.url, class: "thumbnail" %>
+             <% end %>
+             </div>
+             <div class="col-md-10">
+             <blockquote class="bquote">
+             <%= link_to doc.title, doc %> 
+              <footer>
+                 <%= doc.source %>
+              </footer>
+
+             </blockquote>
+            
+           
+            </div>
+          
+          <% if current_user.try(:admin?) %>
+            <%= link_to 'Удалить', doc, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger btn-xs pull-right destroy" %>
+            <%= link_to 'Редактировать', edit_doc_path(doc), class: "btn btn-primary btn-xs pull-right edit" %>
+          <% end %>
+        
     </div>
-  </div>
-
-
-<table class="table table-hover table-bordered">
-
-
-  <tbody>
-
-    <% @docs.each do |doc| %>
-
-      <tr>
-        <td id = 'title-cell'>
-                          <% if current_user.try(:admin?) %>
-                            <%= link_to 'Удалить', doc, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger btn-xs pull-right destroy" %>
-          <%= link_to 'Редактировать', edit_doc_path(doc), class: "btn btn-primary btn-xs pull-right edit" %>
-
+     <hr>
+  <% end %>
         
 
-          
-        <% end %>
-        <%= link_to doc.title, doc %>
-        </td>
+  <%= t = paginate @docs %>
 
-        <td id = 'source-cell'><%= doc.source %></td>
 
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
-<%= paginate @docs %>
-
-<br>
-<% if current_user.try(:admin?) %>
-<%= link_to 'New Doc', new_doc_path %>
-<%= link_to 'Import', import_docs_path %>
-<% end %>
+  <br>
+  <% if current_user.try(:admin?) %>
+  <%= link_to 'Синхронизация', import_docs_path, class: "btn btn-primary pull-right" %>
+  <% end %>

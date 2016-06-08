@@ -1,4 +1,26 @@
 
  <% current_user.find_liked_items.each do |item| %>
-  <%= link_to item.title, item %>
- <% end %>
+ 
+
+     <div class="row text-center">
+    <div class="col-md-2">
+              <% if !item.attachments.empty? %>
+             <%= image_tag item.attachments.first.scans.first.image.url, class: "thumbnail" %>
+             <% end %>
+             </div>
+             <div class="col-md-8">
+             <blockquote class="bquote">
+             <%= link_to item.title, item %> 
+              <footer>
+                 <%= item.source %>
+              </footer>
+
+             </blockquote>
+            
+           
+            </div>
+        
+    </div>
+     <hr>
+
+     <% end %>

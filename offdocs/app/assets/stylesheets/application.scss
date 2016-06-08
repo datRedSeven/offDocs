@@ -17,7 +17,9 @@
 @import "bootstrap-sprockets";
 @import "bootstrap";
 
-
+body {
+    font-family: "Times New Roman", Times, serif;
+}
 .table {
   text-align: center;
   }
@@ -44,30 +46,27 @@
   margin: 5px 0px;
 }
 
+.search-text-fields {
+  border-radius: 0%;
+}
+
 .date-row {
   margin-bottom: 20px;
 }
 
-.carousel-indicators-numbers {
-    li {
-      text-indent: 0;
-      margin: 0 2px;
-      text-align: center;
-      width: 30px;
-      height: 30px;
-      border: 1px solid black;
-      border-radius: 0%;
-      line-height: 30px;
-      color: black;
-      background-color: #fff;
-      transition: all 0.25s ease;
-      &.active, &:hover {
-        margin: 0 2px;
-        width: 30px;
-        height: 30px;
-        background-color: #337ab7;        
-      }
-    }
+ul {
+  list-style: none;
+}
+
+
+.thumbnail {
+  width: 150px;
+  heigth: 400px;
+}
+
+.bquote {
+  min-height: 210px;
+  text-align: center;
 }
 
 .carousel-indicators {
@@ -77,5 +76,43 @@
 .carousel-inner {
    margin-bottom:50px;
 }
+
+#search-form-titles > div.row.date-row > div > input.btn.btn-primary.btn-sm {
+  height: 34px;
+  width: 70px;
+}
+
+.form-control.carousel-custom {
+  width: 63px;
+
+  font-size: 16px;
+}
+
+.carousel-control.left {
+  color: black;
+}
+
+.carousel-control.right {
+  color: black;
+  background-image: none;
+  top: -13px;
+
+}
+.carousel-control.left {
+  color: black;
+  background-image: none;
+  top: -13px;
+}
+
+.col-md-offset-3.arrows-and-stuff {
+  margin-left:23%;
+}
+
+.download-button {
+   margin-right:22%;
+}
+
+
+
 
 

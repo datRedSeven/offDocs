@@ -1,0 +1,10 @@
+
+<% if !current_user.liked? @doc %>
+<div class="button-follow">
+  <%= link_to 'Избранное', "/docs/#{@doc.id}/favorite", method: :post, remote: true, id: 'toggle_unfav_link', class: "btn btn-primary btn-sm" %>
+</div>
+<% else %>
+<div class="button-unfollow">
+  <%= link_to 'Удалить из избранного', "/docs/#{@doc.id}/unfavorite", method: :post, remote: true, id: 'toggle_fav_link', class: "btn btn-danger btn-sm" %>
+</div>
+<% end %>

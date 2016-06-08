@@ -2,11 +2,12 @@
 <html>
 <head>
 	<title>OffDocs</title>
+	<script src="bootstrap-datepicker.ru.js" charset="UTF-8"></script>
 	<%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
 	<%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
 	<%= csrf_meta_tags %>
 </head>
-<body>
+<body class="<%= controller_name %> <%= action_name %>">
 
 
 	<div class="menu-navigation">
@@ -39,17 +40,6 @@
 		</nav>
 	</div>
 	
-
-
-	
-	
-
-	
-	<% flash.each do |name, msg| %>
-	<div class="alert alert-warning">
-		<%= content_tag(:div, msg) %>
-	</div>
-	<% end %>
 	
 
 	<div class="col-md-12 center-block">
@@ -57,4 +47,5 @@
 	</div>
 
 </body>
+
 </html>

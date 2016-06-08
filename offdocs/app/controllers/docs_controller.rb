@@ -14,6 +14,7 @@ class DocsController < ApplicationController
 
   # GET /docs
   # GET /docs.json
+
   def index
     #@docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
     if params.present?
@@ -36,8 +37,6 @@ class DocsController < ApplicationController
         paginate :page => params[:page], :per_page => 15
       end
       @docs = @search.results
-      #else
-      #  @docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
     else
       @docs = Doc.all.order("created_at DESC").page(params[:page]).per(15)
     end
@@ -46,10 +45,6 @@ class DocsController < ApplicationController
   # GET /docs/1
   # GET /docs/1.json
   def show
-    #Usermailer.sample_email(current_user).deliver_now
-   # @pdf = Magick::ImageList.new(@doc.attachment.path) {self.density = 100}
-    #@imgs = Docsplit.extract_images(@doc.attachment.path, :size => '1000x', :format => [:jpg], :path => '/downloads/tmp')
-
   end
 
 
@@ -153,15 +148,10 @@ class DocsController < ApplicationController
   def import_docs
 
     @update_list = []
-    #@doc = current_user.docs.build
-    #@doc.save
+
     agent = Mechanize.new
     i = 1
 
-
-
-
-    #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
 
     #-------
     temp_folder_path = 'downloads/temp/'
@@ -219,11 +209,6 @@ class DocsController < ApplicationController
             @doc = current_user.docs.create
 
 
-
-
-
-            # ot or without ot
-            # month written or dots
 
             if title.include? " № "
               date_added = title.split(" № ")
@@ -399,8 +384,7 @@ class DocsController < ApplicationController
               @doc.save
             end
             
-            #puts link
-            #puts title.squish
+
 
             if div.attributes['class'].to_s.include? " proj_ "
               @original = Doc.find(main_doc_id)
@@ -417,7 +401,6 @@ class DocsController < ApplicationController
             @prev_doc = nil
 
 
-            #puts "__________________________"
           end
           #break
         end
@@ -433,9 +416,7 @@ class DocsController < ApplicationController
     i = 1
 
     while true do
-      #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
-    #url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B?keywords=228"
-      #puts i
+
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
       if agent.get(url).links_with(:class => 'media-item-link').count == 0
         i -= 1
@@ -445,25 +426,15 @@ class DocsController < ApplicationController
 
     end
     i = 2
-    #page = agent.get(url)
-    #puts i
     while i > 0 do
       url = "http://xn--80abucjiibhv9a.xn--p1ai/%D0%B4%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/by-page?page=#{i}&keywords=228"
       agent.get(url) do |page|
         page.links_with(:class => 'media-item-link').reverse.each do |link|
           #puts link.text
           tmp_page = agent.click(link)
-          #pp pagex
-          #pagex.links_with(:href => %r{pdf}).each do |link|
-          #  puts link.href
-          #end
+
           tmp_links = tmp_page.links_with(:href => %r{pdf})
-          #puts "___________________"
-          #puts link.text
-          #if tmp_link.nil?
-          #  tmp_link.text = link.text
-          #end
-          #if Doc.where("title = ?", tmp_link.text).empty?
+
           if Doc.where("title = ?", link.text).empty?
             #if tmp_link.text.include? "О внесении изменения" or tmp_link.text.include? "О внесении изменений"
             if link.text.include? "О внесении изменения" or link.text.include? "О внесении изменений"
@@ -521,8 +492,6 @@ class DocsController < ApplicationController
 
 
 
-
-
             #---------------------------
             if !@original.nil?
               @original.updates << @doc
@@ -541,14 +510,13 @@ class DocsController < ApplicationController
                 @attachment[:file_file_name] = @attachment.id.to_s + '.pdf'
                 @attachment[:file_content_type] = 'application/pdf'
                 @attachment.save
-              #@doc[:attachment_file_name] = file
-              #doc[:attachment_content_type] = 'application/pdf'
-            end
 
-            Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
-            @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
-            @list.each do |l|
-              image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
+              end
+
+              Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
+              @list = Dir[Rails.root.join('app', 'assets', 'images').to_s + "/#{@attachment.id}_*"]
+              @list.each do |l|
+                image_name = l.split(Rails.root.join('app', 'assets', 'images').to_s + '/')
                 #puts x[1]
                 @scan = @attachment.scans.create
                 @scan[:image_file_name] = image_name[1]
@@ -559,23 +527,20 @@ class DocsController < ApplicationController
             end
 
 
-            #@doc[:attachment_file_name] = 'downloads/' + @doc.id.to_s + '.pdf'
-            #@doc.save
-            #----------------------
 
-        #    break #BREAK HERE TEST
+        #    break 
       end
 
     end
-        #break #$SFFQFQEF
+        #break 
       end
       i -= 1
-      #break #DAKLNFLKA
+      #break 
     end
     #if i == 1
     #  break
     #end
-      #break #HERE TOO
+      #break 
       #i -= 1
     #end
 
@@ -586,16 +551,12 @@ class DocsController < ApplicationController
     f = open(url).read
     result = JSON.parse(f)
 
-    #puts result['Data'].select {|h1| h1["ID"] == 49144}.first["CreatorDepartment"]["Title"]
-    #puts "___________________"
+
     results = result['Data'].select {|h1| h1["CreatorDepartment"]["Title"] == "Минобрнауки России"}
-    #id = results.first['ID']
-    #puts id
-    #puts "_______________________________"
+
     i = 0
     results.each do |record|
-    #_______________________________
-      #id = 9648
+
       id = record['ID']
       url = "http://regulation.gov.ru/Npa/GetAjaxForm?id=#{id}&mnemonic=Npa_AreaRegulation_ListView&readonly=true&_dialogid=dialog_3d21f08364fa404db62e4375f3a432a1&_widgetid=widget_ffed2bcef4094d918ecb9978d2c03d99&_dialogtype=Modal&_parentid=&_currentid="
       agent.get(url) do |page|
@@ -743,7 +704,6 @@ class DocsController < ApplicationController
                     img = RTesseract.new(page_img, :lang => "rus")
                     extracted_text += img.to_s
                   end
-                  #@doc[:document] = extracted_text
                   
 
                   Docsplit.extract_images(path, :size => '500x', :format => [:jpg], :output => Rails.root.join('app', 'assets', 'images').to_s)
@@ -758,9 +718,7 @@ class DocsController < ApplicationController
                   end
                 end
               end
-              #if @doc.attachments.empty?
-              #  @doc.destroy
-              #else
+
               @doc[:source] = "Федеральный портал проектов нормативных правовых актов"
               @doc[:document] = extracted_text
               @doc.save
@@ -777,8 +735,6 @@ class DocsController < ApplicationController
               end
               @changes = []
               #end
-              #  response = agent.get_file("http://regulation.gov.ru/" + tmp_links.first.href)
-              #  File.open(Rails.root.join('downloads').to_s + '/1.doc', 'wb') {|f| f << response}
             end
           else
 
@@ -961,28 +917,24 @@ class DocsController < ApplicationController
                 end
               end
             end
-              #@proj = nil
-            end
+
           end
         end
-        i += 1
-        if i == 20
-          break
-        end
       end
-
-
-      if !@update_list.empty?
-        User.where("subscription = 3").each do |user|
-          Usermailer.send_updates(current_user, @update_list).deliver_now
-        end
+      i += 1
+      if i == 20
+        break
       end
-      @update_list = []
+    end
 
-    #__________________________
-    #puts page.links_with(:class => 'media-item-link').count
-    #page.links_with(:id => 'more_docs').first.click
-    #puts page.links_with(:class => 'media-item-link').count
+
+    if !@update_list.empty?
+      User.where("subscription = 3").each do |user|
+        Usermailer.send_updates(current_user, @update_list).deliver_now
+      end
+    end
+    @update_list = []
+
     redirect_to docs_url
   end
 
@@ -992,12 +944,20 @@ class DocsController < ApplicationController
 
   def favorite
     @doc.liked_by current_user
-    redirect_to @doc
+    respond_to do |format|
+      format.html { redirect_to @doc}
+      format.js
+    end
+    #redirect_to @doc
   end
 
   def unfavorite
     @doc.unliked_by current_user
-    redirect_to @doc
+    respond_to do |format|
+      format.html { redirect_to @doc}
+      format.js
+    end
+    #redirect_to @doc
   end
 
   def favorites
