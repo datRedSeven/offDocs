@@ -1,7 +1,9 @@
 
 <div class="partial-buttons">
-  <%= render partial: "buttons" %>
+  <%= render partial: "buttons", locals: {doc: @doc} %>
 </div>
+
+
 
 <div class="text-center">
   <h2>
@@ -88,10 +90,11 @@
     <% end %>
   </p>
 
-
+</p>
 
 
   <% if current_user.try(:admin?) %>
   <%= link_to 'Редактировать', edit_doc_path(@doc), class: "btn btn-primary btn-sm" %> 
   <% end %>
   <%= link_to 'Назад', docs_path, class: "btn btn-primary btn-sm" %>
+ 

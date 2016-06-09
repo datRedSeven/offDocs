@@ -944,6 +944,7 @@ class DocsController < ApplicationController
 
   def favorite
     @doc.liked_by current_user
+    
     respond_to do |format|
       format.html { redirect_to @doc}
       format.js
@@ -953,9 +954,10 @@ class DocsController < ApplicationController
 
   def unfavorite
     @doc.unliked_by current_user
+    
     respond_to do |format|
       format.html { redirect_to @doc}
-      format.js
+      format.js 
     end
     #redirect_to @doc
   end

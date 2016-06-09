@@ -17,19 +17,7 @@
 //= require_tree .
 //= require bootstrap-datepicker
 //= require bootstrap-datepicker/core
-//= require bootstrap-datepicker/locales/bootstrap-datepicker.es.js
-//= require bootstrap-datepicker/locales/bootstrap-datepicker.fr.js
+//= require bootstrap-datepicker/locales/bootstrap-datepicker.ru.js
 
-$( document ).ready(function() {
-$(".form-control.right-date").datepicker({
-    language: "ru",
-    autoclose: true
 
-});
-
-$(".form-control.left-date").datepicker({
-    language: "ru",
-    autoclose: true
-});
-});
 
